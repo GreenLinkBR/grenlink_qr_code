@@ -147,6 +147,33 @@ export function DynamicForm({ type, data, onChange }: Props) {
             <Input id="text" value={data.text ?? ""} onChange={(e) => set("text", e.target.value)} />
           </Field>
         )}
+
+        {type === "pix" && (
+          <>
+            <Field id="key" label="Chave Pix" hint="CPF/CNPJ, e-mail, telefone (+55...) ou chave aleatória">
+              <Input id="key" maxLength={77} value={data.key ?? ""} onChange={(e) => set("key", e.target.value)} placeholder="ex: nome@exemplo.com" />
+            </Field>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <Field id="name" label="Nome do recebedor" hint="Máx. 25 caracteres, sem acentos">
+                <Input id="name" maxLength={25} value={data.name ?? ""} onChange={(e) => set("name", e.target.value)} />
+              </Field>
+              <Field id="city" label="Cidade" hint="Máx. 15 caracteres">
+                <Input id="city" maxLength={15} value={data.city ?? ""} onChange={(e) => set("city", e.target.value)} />
+              </Field>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <Field id="amount" label="Valor (opcional)" hint="Em reais, ex: 19.90">
+                <Input id="amount" inputMode="decimal" placeholder="0,00" value={data.amount ?? ""} onChange={(e) => set("amount", e.target.value)} />
+              </Field>
+              <Field id="txid" label="Identificador / TXID (opcional)" hint="Apenas letras e números, máx. 25">
+                <Input id="txid" maxLength={25} value={data.txid ?? ""} onChange={(e) => set("txid", e.target.value.replace(/[^A-Za-z0-9]/g, ""))} />
+              </Field>
+            </div>
+            <Field id="description" label="Descrição (opcional)" hint="Máx. 50 caracteres">
+              <Input id="description" maxLength={50} value={data.description ?? ""} onChange={(e) => set("description", e.target.value)} />
+            </Field>
+          </>
+        )}
       </div>
     </div>
   );

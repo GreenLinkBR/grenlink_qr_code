@@ -9,7 +9,7 @@ interface Props {
 export function QRTypeSelector({ value, onChange }: Props) {
   return (
     <div className="rounded-2xl bg-surface border border-border p-3 sm:p-4">
-      <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+      <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-8 gap-2">
         {QR_TYPES.map((t) => {
           const Icon = t.icon;
           const active = value === t.id;

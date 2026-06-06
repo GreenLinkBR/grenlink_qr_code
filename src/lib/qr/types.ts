@@ -1,12 +1,13 @@
 import {
   Link as LinkIcon, FileText, Mail, Phone, MessageSquare, Contact,
   MessageCircle, Wifi, FileDown, Smartphone, Image as ImageIcon,
-  Video, Share2, CalendarDays, Barcode,
+  Video, Share2, CalendarDays, Barcode, Banknote,
 } from "lucide-react";
+import { buildPixPayload } from "./pix";
 
 export type QRType =
   | "link" | "texto" | "email" | "ligacao" | "sms" | "vcard" | "whatsapp"
-  | "wifi" | "pdf" | "app" | "imagens" | "video" | "redes" | "evento" | "barcode";
+  | "wifi" | "pdf" | "app" | "imagens" | "video" | "redes" | "evento" | "barcode" | "pix";
 
 export interface QRTypeMeta {
   id: QRType;
@@ -31,6 +32,7 @@ export const QR_TYPES: QRTypeMeta[] = [
   { id: "redes", label: "Redes Sociais", icon: Share2, color: "bg-teal-100 text-teal-700" },
   { id: "evento", label: "Evento", icon: CalendarDays, color: "bg-cyan-100 text-cyan-700" },
   { id: "barcode", label: "Código de Barras", icon: Barcode, color: "bg-stone-100 text-stone-700" },
+  { id: "pix", label: "Pix", icon: Banknote, color: "bg-emerald-100 text-emerald-700" },
 ];
 
 export const getTypeMeta = (id: string) =>
@@ -149,6 +151,15 @@ export function encodeQRContent(type: QRType, data: Record<string, string>): str
     }
     case "barcode":
       return sanitize(data.text, 200);
+    case "pix":
+      return buildPixPayload({
+        key: sanitize(data.key, 77),
+        name: sanitize(data.name, 25),
+        city: sanitize(data.city, 15),
+        amount: data.amount ? sanitize(data.amount, 13) : undefined,
+        txid: data.txid ? sanitize(data.txid, 25) : undefined,
+        description: data.description ? sanitize(data.description, 50) : undefined,
+      });
     default:
       return "";
   }
