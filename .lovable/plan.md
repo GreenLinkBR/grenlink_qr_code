@@ -1,66 +1,79 @@
-## GreenLink QR Gerador — Plano de Build
+## Objetivo
 
-App TanStack Start + React + Tailwind para gerar, customizar, baixar e salvar QR Codes, com Supabase (seu projeto) para auth e persistência.
+Fazer o `vite build` gerar um site **100% estático** em `dist/` com `index.html` na raiz, pronto para subir em `public_html` da Hostinger (via GitHub) — eliminando o erro 403.
 
-### 1. Setup
-- Conectar seu Supabase via Connectors (você será solicitado a colar URL + chaves do projeto).
-- Instalar deps: `qr-code-styling`, `qrcode`, `sonner` (lucide-react e supabase-js já no template).
-- Tema verde (#1A6B3C / #F0F7F4 / DM Sans) em `src/styles.css` via tokens oklch. Tailwind classes só via tokens semânticos.
+## Causa do 403
 
-### 2. Rotas (TanStack file-based)
-- `/` → HomePage (gerador, público)
-- `/auth` → Login/Signup
-- `/_authenticated/dashboard` → "Meus QR Codes"
-- `/_authenticated/qr/$id` → Detalhe/edição
-- `_authenticated.tsx` layout com `beforeLoad` redirect se não logado
-- `__root.tsx` com header dinâmico + listener `onAuthStateChange` para invalidar cache
+O template atual compila com **TanStack Start + Nitro (target Cloudflare Workers)**. A saída é um bundle de servidor, não um site estático — não existe `index.html` na raiz do build. O Apache da Hostinger, sem index, responde **403 Forbidden**.
 
-### 3. Auth (Supabase)
-- AuthPage: tabs Entrar / Criar Conta, email+senha, Google OAuth (`signInWithOAuth({provider:'google'})`), link "Esqueci minha senha", validação em PT-BR.
-- Rota `/reset-password` para fluxo de recuperação.
-- Após login → `/dashboard`. Após signup → mensagem "Verifique seu e-mail".
-- Você precisará habilitar provider Google no painel do seu Supabase.
+A Hostinger compartilhada só serve estático. Precisamos de uma SPA Vite tradicional.
 
-### 4. Banco (migrations no seu Supabase)
-Tabela `profiles` (id uuid PK FK auth.users, email, full_name, avatar_url, created_at) + trigger `handle_new_user` para auto-criar no signup. RLS: usuário lê/atualiza só o próprio.
+## Mudanças
 
-Tabela `qr_codes` (id, user_id FK, title, qr_type, content_data jsonb, design_config jsonb, preview_url, created_at, updated_at). RLS: todas as ops escopadas a `auth.uid()`. Índices em user_id e created_at DESC. GRANTs corretos para authenticated/service_role.
+### 1. `vite.config.ts` — trocar o preset Lovable por Vite puro
+Remover `@lovable.dev/vite-tanstack-config` (que injeta Nitro/Cloudflare) e usar:
+- `@vitejs/plugin-react`
+- `@tanstack/router-plugin/vite` (gera `routeTree.gen.ts` igual)
+- `@tailwindcss/vite`
+- `vite-tsconfig-paths`
+- `build.outDir = "dist"` (padrão)
 
-Bucket Storage `qr-previews`: leitura pública, escrita autenticada, max 2MB, png/svg, path `{user_id}/{qr_id}.png`.
+### 2. `index.html` na raiz do projeto
+Criar `index.html` com `<div id="root">` e `<script type="module" src="/src/main.tsx">`, incluindo as metatags SEO que hoje vivem em `__root.tsx`.
 
-### 5. Componentes do gerador
-- **Header**: logo + nav, estados logado/deslogado.
-- **QRTypeSelector**: 15 tipos (Link, Texto, E-mail, Ligação, SMS, V-Card, WhatsApp, Wi-Fi, PDF, App, Imagens, Video, Redes Sociais, Evento, Código de Barras). Desktop = grid de pills, mobile = scroll horizontal.
-- **DynamicForm**: campos por tipo com validação inline e contadores; gera string codificada (ex: `WIFI:T:WPA;S:ssid;P:pwd;;`, `BEGIN:VCARD...`, `mailto:`, `tel:`, `SMSTO:`, `BEGIN:VEVENT`, etc.).
-- **QRPreview**: `qr-code-styling` com debounce 300ms, placeholder quando vazio, download PNG ≥1000×1000 (`greenlink-qr-[timestamp].png`).
-- **DesignCustomizer**: tabs Frame (9 opções) / Shape (dot type + corner type + 2 color pickers) / Logo (upload PNG/SVG ≤2MB, slider tamanho 10–30%, remover).
-- **SaveQRButton**: visível só se logado; insere em `qr_codes` + sobe preview no Storage; toasts via sonner.
+### 3. `src/main.tsx` — novo entrypoint client-side
+```ts
+ReactDOM.createRoot(document.getElementById("root")!).render(
+  <RouterProvider router={router} />
+);
+```
 
-### 6. Dashboard
-- Header "Meus QR Codes" + botão "Criar Novo QR".
-- Stats: Total / Mês atual / Último criado.
-- Grid responsivo (3/2/1 colunas) de cards com preview, título editável inline, badge de tipo colorido, data, ações Download/Edit/Delete (modal confirmação).
-- Empty state com ilustração + CTA. Skeleton no loading. Modal "ver conteúdo + copiar".
-- Fetch via `useSuspenseQuery` + loader, ordenado por `created_at DESC`.
+### 4. `src/routes/__root.tsx` — remover shell SSR
+Tirar `shellComponent`, `HeadContent`, `Scripts`, `<html>/<body>`. Manter só `component`, `errorComponent`, `notFoundComponent`. Metatags vão para `index.html`.
 
-### 7. Responsivo
-- Desktop ≥1024px: 2 colunas (60/40), preview sticky.
-- Mobile ≤768px: stack único, FAB sticky bottom de download, inputs ≥16px, touch targets ≥44px.
+### 5. Apagar peças de servidor (não usadas)
+- `src/server.ts`
+- `src/start.ts`
+- `src/lib/error-capture.ts`, `src/lib/error-page.ts`
+- `src/lib/config.server.ts`
+- `src/lib/api/example.functions.ts` e pasta `src/routes/api/`
+- Dependências: `@tanstack/react-start`, `nitro`, `@lovable.dev/vite-tanstack-config`
 
-### 8. SEO/Meta
-- `head()` por rota com title/description/og em PT-BR. Index com title "GreenLink QR Gerador — Crie QR Codes Grátis Online".
+### 6. `package.json`
+- `build`: `vite build` (continua igual, mas agora produz estático)
+- Remover deps de servidor acima
+- Adicionar `@vitejs/plugin-react` (já dev dep) — ok
 
-### Detalhes técnicos
-- `qr-code-styling` renderizado client-side (sem SSR — usar dynamic guard).
-- Sanitização de inputs antes de codificar (strip `<script>`, limites de tamanho).
-- Cliente Supabase: `@/integrations/supabase/client` em browser; queries do dashboard via loader chamando o cliente do browser dentro do `_authenticated` (sessão já hidratada). Sem necessidade de service-role.
-- `onAuthStateChange` no `__root.tsx` invalida query cache e router.
+### 7. SPA fallback para a Hostinger
+Criar `public/.htaccess` com regra para rotas client-side (senão `/auth`, `/dashboard` dão 404 ao recarregar):
+```apache
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+  RewriteRule ^index\.html$ - [L]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule . /index.html [L]
+</IfModule>
+```
 
-### O que você precisa fazer
-1. Aprovar este plano.
-2. Quando eu solicitar, selecionar/criar a conexão Supabase no picker.
-3. Habilitar Google provider no painel do Supabase (opcional, posso ajudar com instruções).
+### 8. Auth Supabase
+O fluxo Supabase é totalmente client-side (`@supabase/supabase-js` com localStorage) — funciona sem mudanças. Lembrar de adicionar o domínio Hostinger em **Supabase → Auth → URL Configuration** (Site URL e Redirect URLs).
 
-### Fora de escopo deste build
-- Frames decorativos elaborados com texto "SCAN ME" (vou implementar versão simples; os 9 frames serão variações de moldura básica).
-- Facebook/GitHub OAuth.
+## Resultado
+
+`vite build` gera:
+```
+dist/
+  index.html        ← Apache serve isso por padrão (sem 403)
+  .htaccess         ← fallback SPA para rotas internas
+  assets/*.js,*.css
+```
+
+Você sobe o conteúdo de `dist/` para `public_html/` na Hostinger (ou aponta o deploy do GitHub para essa pasta).
+
+## Trade-offs
+
+- **Sem SSR / sem server functions**: ok, o projeto não usa nenhuma.
+- **Sem preview Lovable com SSR**: o preview continua funcionando como SPA normal.
+- **SEO**: metatags ficam em `index.html` (estáticas, sem variação por rota). Suficiente para esse app.
