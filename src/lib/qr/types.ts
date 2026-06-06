@@ -151,6 +151,15 @@ export function encodeQRContent(type: QRType, data: Record<string, string>): str
     }
     case "barcode":
       return sanitize(data.text, 200);
+    case "pix":
+      return buildPixPayload({
+        key: sanitize(data.key, 77),
+        name: sanitize(data.name, 25),
+        city: sanitize(data.city, 15),
+        amount: data.amount ? sanitize(data.amount, 13) : undefined,
+        txid: data.txid ? sanitize(data.txid, 25) : undefined,
+        description: data.description ? sanitize(data.description, 50) : undefined,
+      });
     default:
       return "";
   }
