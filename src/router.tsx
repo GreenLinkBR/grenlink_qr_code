@@ -12,5 +12,11 @@ export const getRouter = () => {
     defaultPreloadStaleTime: 0,
   });
 
-  return router;
+  return { router, queryClient };
 };
+
+declare module "@tanstack/react-router" {
+  interface Register {
+    router: ReturnType<typeof getRouter>["router"];
+  }
+}

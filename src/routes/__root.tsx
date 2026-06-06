@@ -1,10 +1,7 @@
-import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
-import {
-  Outlet, createRootRouteWithContext, useRouter, HeadContent, Scripts,
-} from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { QueryClient, useQueryClient } from "@tanstack/react-query";
+import { Outlet, createRootRouteWithContext, useRouter } from "@tanstack/react-router";
+import { useEffect } from "react";
 
-import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Header } from "@/components/Header";
 import { Toaster } from "sonner";
@@ -39,33 +36,10 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  head: () => ({
-    meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "GreenLink QR Gerador — Crie QR Codes Grátis Online" },
-      { name: "description", content: "Gere QR Codes grátis para links, WhatsApp, Wi-Fi, cartão de visita e mais. Personalize e baixe em PNG. GreenLink QR Gerador." },
-      { property: "og:title", content: "GreenLink QR Gerador" },
-      { property: "og:description", content: "Gere QR Codes grátis e personalizados." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-    ],
-    links: [{ rel: "stylesheet", href: appCss }],
-  }),
-  shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
   errorComponent: ErrorComponent,
 });
-
-function RootShell({ children }: { children: ReactNode }) {
-  return (
-    <html lang="pt-BR">
-      <head><HeadContent /></head>
-      <body>{children}<Scripts /></body>
-    </html>
-  );
-}
 
 function AuthListener() {
   const router = useRouter();
@@ -81,9 +55,8 @@ function AuthListener() {
 }
 
 function RootComponent() {
-  const { queryClient } = Route.useRouteContext();
   return (
-    <QueryClientProvider client={queryClient}>
+    <>
       <AuthListener />
       <div className="min-h-screen flex flex-col">
         <Header />
@@ -92,6 +65,6 @@ function RootComponent() {
         </main>
       </div>
       <Toaster position="top-right" richColors />
-    </QueryClientProvider>
+    </>
   );
 }
