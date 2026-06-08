@@ -20,25 +20,6 @@ export function QRBuilder() {
 
   const value = encodeQRContent(type, data);
 
-  const handleDownload = async () => {
-    if (!qrRef.current) return;
-    // Build a high-res clone for download
-    const hi = new QRCodeStyling({
-      width: 1024,
-      height: 1024,
-      type: "canvas",
-      data: value,
-      margin: 20,
-      dotsOptions: { color: design.fgColor, type: design.dotType },
-      cornersSquareOptions: { color: design.fgColor, type: design.cornerType },
-      cornersDotOptions: { color: design.fgColor },
-      backgroundOptions: { color: design.bgColor },
-      image: design.logoDataUrl,
-      imageOptions: { hideBackgroundDots: true, imageSize: design.logoSize, margin: 8, crossOrigin: "anonymous" },
-    });
-    await hi.download({ name: `greenlink-qr-${Date.now()}`, extension: "png" });
-  };
-
   const handleSave = async () => {
     if (!user) return;
     setSaving(true);
@@ -68,7 +49,6 @@ export function QRBuilder() {
         <QRPreview
           value={value}
           design={design}
-          onDownload={handleDownload}
           onSave={handleSave}
           saving={saving}
           canSave={!!user}
