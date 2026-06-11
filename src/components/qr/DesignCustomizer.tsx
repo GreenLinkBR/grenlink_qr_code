@@ -32,19 +32,17 @@ const FONT_OPTIONS: { id: FrameFont; label: string }[] = [
   { id: "mono", label: "Mono" },
 ];
 
-// Mini fake QR for frame previews
+// Mini fake QR for frame previews — flat dark square with finder-style corners
 function MiniQR() {
   return (
     <div
-      className="bg-foreground/90"
       style={{
-        width: 36,
-        height: 36,
-        backgroundImage:
-          "radial-gradient(currentColor 1px, transparent 1px), radial-gradient(currentColor 1px, transparent 1px)",
-        backgroundSize: "6px 6px",
-        backgroundPosition: "0 0, 3px 3px",
-        color: "#fff",
+        width: 44,
+        height: 44,
+        background: "#111",
+        boxShadow:
+          "inset 4px 4px 0 0 #fff, inset -4px 4px 0 0 #fff, inset 4px -4px 0 0 #fff," +
+          "inset 6px 6px 0 0 #111, inset -6px 6px 0 0 #111, inset 6px -6px 0 0 #111",
       }}
     />
   );
