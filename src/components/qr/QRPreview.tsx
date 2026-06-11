@@ -3,6 +3,7 @@ import QRCodeStyling from "qr-code-styling";
 import { Button } from "@/components/ui/button";
 import { Download, Save, QrCode } from "lucide-react";
 import type { QRDesign } from "@/lib/qr/design";
+import { QRFrame } from "@/components/qr/QRFrame";
 
 interface Props {
   value: string;
@@ -12,9 +13,10 @@ interface Props {
   saving?: boolean;
   canSave?: boolean;
   qrRef: React.MutableRefObject<QRCodeStyling | null>;
+  framedRef?: React.RefObject<HTMLDivElement>;
 }
 
-export function QRPreview({ value, design, onDownload, onSave, saving, canSave, qrRef }: Props) {
+export function QRPreview({ value, design, onDownload, onSave, saving, canSave, qrRef, framedRef }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [debounced, setDebounced] = useState(value);
 
@@ -23,12 +25,14 @@ export function QRPreview({ value, design, onDownload, onSave, saving, canSave, 
     return () => clearTimeout(t);
   }, [value]);
 
+  const qrSize = design.frame === 4 ? 220 : 240;
+
   const options = useMemo(() => ({
-    width: 280,
-    height: 280,
+    width: qrSize,
+    height: qrSize,
     type: "svg" as const,
     data: debounced || " ",
-    margin: 8,
+    margin: 4,
     dotsOptions: { color: design.fgColor, type: design.dotType },
     cornersSquareOptions: { color: design.fgColor, type: design.cornerType },
     cornersDotOptions: { color: design.fgColor },
@@ -40,7 +44,7 @@ export function QRPreview({ value, design, onDownload, onSave, saving, canSave, 
       margin: 4,
       crossOrigin: "anonymous" as const,
     },
-  }), [debounced, design]);
+  }), [debounced, design, qrSize]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -62,13 +66,21 @@ export function QRPreview({ value, design, onDownload, onSave, saving, canSave, 
         <h3 className="text-base font-semibold">Baixar QR Code</h3>
       </div>
 
-      <div className="aspect-square w-full max-w-xs mx-auto rounded-xl bg-muted/50 grid place-items-center mb-4 overflow-hidden">
+      <div className="w-full max-w-xs mx-auto rounded-xl bg-muted/30 grid place-items-center mb-4 overflow-hidden p-4 min-h-[300px]">
         {hasData ? (
-          <div ref={containerRef} className="w-full h-full grid place-items-center [&>svg]:w-full [&>svg]:h-full [&>svg]:max-w-[280px] [&>svg]:max-h-[280px]" />
+          <div ref={framedRef} className="grid place-items-center">
+            <QRFrame design={design}>
+              <div
+                ref={containerRef}
+                className="grid place-items-center [&>svg]:block"
+                style={{ width: qrSize, height: qrSize }}
+              />
+            </QRFrame>
+          </div>
         ) : (
-          <div className="text-center text-muted-foreground p-6">
-            <QrCode className="w-16 h-16 mx-auto mb-2 opacity-30" />
-            <p className="text-sm">Preencha o conteúdo para gerar</p>
+          <div className="text-center text-muted-foreground text-sm flex flex-col items-center gap-2">
+            <QrCode className="w-10 h-10 opacity-40" />
+            Preencha os campos para gerar o QR
           </div>
         )}
       </div>
