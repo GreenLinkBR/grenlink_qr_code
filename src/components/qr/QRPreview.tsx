@@ -13,7 +13,7 @@ interface Props {
   saving?: boolean;
   canSave?: boolean;
   qrRef: React.MutableRefObject<QRCodeStyling | null>;
-  framedRef?: React.RefObject<HTMLDivElement>;
+  framedRef?: React.RefObject<HTMLDivElement | null>;
 }
 
 export function QRPreview({ value, design, onDownload, onSave, saving, canSave, qrRef, framedRef }: Props) {
