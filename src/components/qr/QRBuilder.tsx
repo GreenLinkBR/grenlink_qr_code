@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import QRCodeStyling from "qr-code-styling";
 import { toast } from "sonner";
+import { toPng } from "html-to-image";
 import { QRTypeSelector } from "@/components/qr/QRTypeSelector";
 import { DynamicForm } from "@/components/qr/DynamicForm";
 import { DesignCustomizer } from "@/components/qr/DesignCustomizer";
@@ -16,27 +17,44 @@ export function QRBuilder() {
   const [design, setDesign] = useState<QRDesign>(DEFAULT_DESIGN);
   const [saving, setSaving] = useState(false);
   const qrRef = useRef<QRCodeStyling | null>(null);
+  const framedRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
 
   const value = encodeQRContent(type, data);
 
   const handleDownload = async () => {
-    if (!qrRef.current) return;
-    // Build a high-res clone for download
-    const hi = new QRCodeStyling({
-      width: 1024,
-      height: 1024,
-      type: "canvas",
-      data: value,
-      margin: 20,
-      dotsOptions: { color: design.fgColor, type: design.dotType },
-      cornersSquareOptions: { color: design.fgColor, type: design.cornerType },
-      cornersDotOptions: { color: design.fgColor },
-      backgroundOptions: { color: design.bgColor },
-      image: design.logoDataUrl,
-      imageOptions: { hideBackgroundDots: true, imageSize: design.logoSize, margin: 8, crossOrigin: "anonymous" },
-    });
-    await hi.download({ name: `greenlink-qr-${Date.now()}`, extension: "png" });
+    if (design.frame === 0) {
+      const hi = new QRCodeStyling({
+        width: 1024,
+        height: 1024,
+        type: "canvas",
+        data: value,
+        margin: 20,
+        dotsOptions: { color: design.fgColor, type: design.dotType },
+        cornersSquareOptions: { color: design.fgColor, type: design.cornerType },
+        cornersDotOptions: { color: design.fgColor },
+        backgroundOptions: { color: design.bgColor },
+        image: design.logoDataUrl,
+        imageOptions: { hideBackgroundDots: true, imageSize: design.logoSize, margin: 8, crossOrigin: "anonymous" },
+      });
+      await hi.download({ name: `greenlink-qr-${Date.now()}`, extension: "png" });
+      return;
+    }
+    if (!framedRef.current) return;
+    try {
+      const dataUrl = await toPng(framedRef.current, {
+        pixelRatio: 4,
+        cacheBust: true,
+        backgroundColor: "#ffffff",
+      });
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = `greenlink-qr-${Date.now()}.png`;
+      a.click();
+    } catch (e) {
+      console.error(e);
+      toast.error("Não foi possível exportar a imagem.");
+    }
   };
 
   const handleSave = async () => {
@@ -73,6 +91,7 @@ export function QRBuilder() {
           saving={saving}
           canSave={!!user}
           qrRef={qrRef}
+          framedRef={framedRef}
         />
       </div>
     </div>
