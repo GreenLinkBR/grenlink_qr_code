@@ -50,12 +50,15 @@ export function QRPreview({ value, design, onDownload, onSave, saving, canSave, 
     if (!containerRef.current) return;
     if (!qrRef.current) {
       qrRef.current = new QRCodeStyling(options);
-      containerRef.current.innerHTML = "";
-      qrRef.current.append(containerRef.current);
     } else {
       qrRef.current.update(options);
     }
-  }, [options, qrRef]);
+    // Always (re)attach: when the frame changes the container div is
+    // re-parented, so the previously appended SVG is no longer in the tree.
+    if (containerRef.current.childElementCount === 0) {
+      qrRef.current.append(containerRef.current);
+    }
+  }, [options, qrRef, design.frame]);
 
   const hasData = debounced.trim().length > 0;
 
