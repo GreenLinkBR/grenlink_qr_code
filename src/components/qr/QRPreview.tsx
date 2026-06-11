@@ -1,23 +1,21 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import QRCodeStyling from "qr-code-styling";
-import { toPng } from "html-to-image";
 import { Button } from "@/components/ui/button";
 import { Download, Save, QrCode } from "lucide-react";
 import type { QRDesign } from "@/lib/qr/design";
-import { QRFrame } from "./QRFrame";
 
 interface Props {
   value: string;
   design: QRDesign;
+  onDownload: () => void;
   onSave?: () => void;
   saving?: boolean;
   canSave?: boolean;
   qrRef: React.MutableRefObject<QRCodeStyling | null>;
 }
 
-export function QRPreview({ value, design, onSave, saving, canSave, qrRef }: Props) {
+export function QRPreview({ value, design, onDownload, onSave, saving, canSave, qrRef }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const frameRef = useRef<HTMLDivElement>(null);
   const [debounced, setDebounced] = useState(value);
 
   useEffect(() => {
@@ -57,20 +55,6 @@ export function QRPreview({ value, design, onSave, saving, canSave, qrRef }: Pro
 
   const hasData = debounced.trim().length > 0;
 
-  const handleDownload = async () => {
-    if (!frameRef.current) return;
-    const node = frameRef.current;
-    const dataUrl = await toPng(node, {
-      pixelRatio: 3,
-      backgroundColor: design.frame === 0 ? design.bgColor : undefined,
-      cacheBust: true,
-    });
-    const link = document.createElement("a");
-    link.download = `greenlink-qr-${Date.now()}.png`;
-    link.href = dataUrl;
-    link.click();
-  };
-
   return (
     <div className="rounded-2xl bg-surface border border-border p-5 sm:p-6 lg:sticky lg:top-20">
       <div className="flex items-center gap-2 mb-5">
@@ -78,13 +62,9 @@ export function QRPreview({ value, design, onSave, saving, canSave, qrRef }: Pro
         <h3 className="text-base font-semibold">Baixar QR Code</h3>
       </div>
 
-      <div className="aspect-square w-full max-w-xs mx-auto rounded-xl bg-muted/50 grid place-items-center mb-4 overflow-hidden p-3">
+      <div className="aspect-square w-full max-w-xs mx-auto rounded-xl bg-muted/50 grid place-items-center mb-4 overflow-hidden">
         {hasData ? (
-          <div ref={frameRef} className="inline-block">
-            <QRFrame frame={design.frame} color={design.fgColor} bg={design.bgColor}>
-              <div ref={containerRef} className="[&>svg]:block [&>svg]:w-[240px] [&>svg]:h-[240px]" />
-            </QRFrame>
-          </div>
+          <div ref={containerRef} className="w-full h-full grid place-items-center [&>svg]:w-full [&>svg]:h-full [&>svg]:max-w-[280px] [&>svg]:max-h-[280px]" />
         ) : (
           <div className="text-center text-muted-foreground p-6">
             <QrCode className="w-16 h-16 mx-auto mb-2 opacity-30" />
@@ -93,7 +73,7 @@ export function QRPreview({ value, design, onSave, saving, canSave, qrRef }: Pro
         )}
       </div>
 
-      <Button onClick={handleDownload} disabled={!hasData} className="w-full" size="lg">
+      <Button onClick={onDownload} disabled={!hasData} className="w-full" size="lg">
         <Download className="w-4 h-4 mr-2" />
         Baixar QR Code
       </Button>
